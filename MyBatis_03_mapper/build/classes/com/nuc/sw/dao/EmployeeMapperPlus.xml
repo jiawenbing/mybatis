@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nuc.sw.dao.EmployeeMapperPlus">
+
+	<!-- 有三种方式进行封装 1.数据库字段名和javabean属性名符合驼峰命名，开启驼峰命名规则 2.使用数据库sql语句别名规则 3.使用resultMap进行自定义封装 -->
+	<resultMap type="com.nuc.sw.bean.Employee" id="mySimpleEmp">
+	<!-- type: 自定义规则的java类型 -->
+	
+		<!--id定义主键底层会有优化
+			id进行封装主键属性 column:数据库的字段属性名 property:javabean的属性名 -->
+		<id column="id" property="id" />
+		
+		<!-- 进行封装普通字段，一般建议所有属性都进行封装（不写的属性会进行自动封装） -->
+		<result column="last_name" property="lastName" />
+		<result column="gender" property="gender" />
+		<result column="email" property="email" />
+	</resultMap>
+	<!-- public Employee getEmployeeById(Integer id); resultType 会进行自动封装（将字段属性值和javabean属性值进行封装） 
+		当字段属性名和javabean属性名不同时，采用手动封装resultMap -->
+	<select id="getEmployeeById" resultMap="myEmpDis">
+		select * from
+		tbl_employee where id = ${id}
+	</select>
+
+	<!-- 1.使用级联属性封装java对象 （关联查询，javabean对象中包含另一个javabean对象） -->
+	<resultMap type="com.nuc.sw.bean.Employee" id="myDifficultEmp">
+		<id column="e_id" property="id" />
+		<result column="last_name" property="lastName" />
+		<result column="gender" property="gender" />
+		<result column="email" property="email" />
+		<result column="d_id" property="dept.id" />
+		<result column="name" property="dept.Deptname" />
+	</resultMap>
+
+	<!-- 2.使用级联属性封装java对象（关联查询） 使用association定义单个对象的封装规则 -->
+	<resultMap type="com.nuc.sw.bean.Employee" id="myDifficultEmp2">
+		<id column="e_id" property="id" />
+		<result column="last_name" property="lastName" />
+		<result column="gender" property="gender" />
+		<result column="email" property="email" />
+		<!-- property属性：指明在javabean中哪个属性是关联属性 javaType属性：指定关联属性的类型 -->
+		<association property="dept" javaType="com.nuc.sw.bean.Department">
+			<!--column属性表示的是进行关联操作后形成的连接表中的属性名 property属性表示的是javabean中的属性 -->
+			<id column="d_id" property="id" />
+			<result column="name" property="Deptname" />
+		</association>
+	</resultMap>
+	<!-- public Employee getEmpAndDeptById(Integer id); -->
+	<select id="getEmpAndDeptById" resultMap="myDifficultEmp2">
+		select e.id e_id,
+		last_name , gender , email , d.id d_id, name from
+		tbl_employee e,
+		tbl_department d where e.dept_id = d.id and e.id =
+		#{id}
+	</select>
+
+	<!-- 使用assocation实现分步查询 1.先按员工id查询员工信息 2.根据员工信息中的dept_id查询部门信息 3.将部门信息加到员工信息中 -->
+	<resultMap type="com.nuc.sw.bean.Employee" id="myEmpByStep">
+		<id column="id" property="id" />
+		<result column="last_name" property="lastName" />
+		<result column="gender" property="gender" />
+		<result column="email" property="email" />
+		<!-- 使用association定义单个关联对象的封装规则 select 表明当前关联对象的值由该方法查询得到 column 指定将哪一列字段的值传给该方法 -->
+		<!-- 流程：使用select指定的方法（column指定将哪一列的值传给该方法）查询出该对象的值并封装给property指定的属性 -->
+		<association property="dept"
+			select="com.nuc.sw.dao.DepartmentMapper.getDepartmentById" column="dept_id">
+		</association>
+	</resultMap>
+	<select id="getEmployeeByIdStep" resultMap="myEmpDis">
+		select * from
+		tbl_employee where id = #{id}
+	</select>
+
+	<!-- 延迟加载 每次使用Employee对象时会将Department一起进行查询，有时可能并不需要Department对象 可以采用延迟加载的方式，在用到Department对象时会进行查询 
+		在全局配置文件中加入如下配置 <setting name="lazyLoadingEnabled" value="true"/> <setting 
+		name="aggressiveLazyLoading" value="false"/> -->
+
+	<select id="getEmployeesByDept_IdStep" resultType="com.nuc.sw.bean.Employee">
+		select * from
+		tbl_employee where dept_id = #{dept_id}
+	</select>
+
+	<!-- 鉴别器 <discriminator javaType=""></discriminator> 使用discriminator鉴别某列的值，根据值改变封装的行为 
+		如果是女生，就查询部门信息 如果是男生，把last_name的值赋值给email -->
+	<resultMap type="com.nuc.sw.bean.Employee" id="myEmpDis">
+		<id column="id" property="id" />
+		<result column="last_name" property="lastName" />
+		<result column="gender" property="gender" />
+		<result column="email" property="email" />
+		<!-- column指定判定的列名 javaType 列值对应的java类型 -->
+		<discriminator javaType="string" column="gender">
+			<!-- resultType指定封装的结果类型,不可缺少-->
+			<case value="1" resultType="com.nuc.sw.bean.Employee">
+				<result column="last_name" property="email" />
+			</case>
+			<case value="0" resultType="com.nuc.sw.bean.Employee">
+				<association property="dept"
+					select="com.nuc.sw.dao.DepartmentMapper.getDepartmentById" column="dept_id">
+				</association>
+			</case>
+		</discriminator>
+	</resultMap>
+</mapper>
