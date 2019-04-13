@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nuc.sw.dao.EmployeeMapper">
+
+<!--
+接口与sql映射文件进行绑定
+namespace:名称空间  ***接口的全类名
+id:sql语句唯一标识   ***接口的方法名
+resultType:返回值类型
+databaseId:指定使用的是什么数据库   写主配置文件databaseIdProvider标签下的value值
+			优先加载带有准确数据库标识的语句
+#{id}:从传递过来的参数中取出id的值
+ -->
+	<select id="getEmployeeById" resultType="com.nuc.sw.bean.Employee" databaseId="mysql">
+		select * from tbl_employee where id = #{id}
+	</select>
+	<!-- <select id="getEmployeeById" resultType="emp" databaseId="oracle">
+		select * from tbl_employee where id = #{id}
+	</select> -->
+</mapper>
