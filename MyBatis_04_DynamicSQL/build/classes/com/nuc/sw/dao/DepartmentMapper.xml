@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nuc.sw.dao.DepartmentMapper">
+	<select id="getDepartmentById" resultType="com.nuc.sw.bean.Department">
+		select id, name Deptname from tbl_department where id = #{id}
+	</select>
+	
+	<!-- 嵌套结果集的方式，定义关联集合元素的封装规则 -->
+	<resultMap type="com.nuc.sw.bean.Department" id="myDept">
+		<id column="d_id" property="id"/>
+		<result column="d_name" property="Deptname"/>
+		<!-- collection定义关联集合属性的封装规则
+			 ofType定义集合中元素的类型
+		 -->
+		<collection property="emps" ofType="com.nuc.sw.bean.Employee">
+			<id column="e_id" property="id"/>
+			<result column="e_last_name" property="lastName"/>
+			<result column="e_gender" property="gender"/>
+			<result column="e_email" property="email"/>
+		</collection>
+	</resultMap>
+	<select id="getDepartmentsById" resultMap="myDept">
+	select d.id d_id, d.name d_name, e.id e_id, e.last_name e_last_name, e.gender e_gender, e.email e_email 
+	from tbl_department d left join tbl_employee e on d.id = e.dept_id where d.id = 1
+	</select>
+	
+	<!-- 分步查询嵌套结果集的方式，定义关联集合元素的封装规则 -->
+	<resultMap type="com.nuc.sw.bean.Department" id="myDeptStep">
+		<id column="id" property="id"/>
+		<result column="name" property="Deptname"/>
+		<!-- column属性
+				当需要传入的属性有多个的时候，就封装成一个map进行传输
+				column="{key1=value1}"
+					map的key为select的方法的接收参数，value为数据库中查出的待传入字段
+				fetchType="lazy"
+					lazy表示延迟加载
+					eager表示立即加载
+		 -->
+		 
+		<collection property="emps" select="com.nuc.sw.dao.EmployeeMapperPlus.getEmployeesByDept_IdStep" column="{dept_id=id}" fetchType="eager">
+		</collection>
+	</resultMap>
+	<select id="getDepartmentsByIdStep" resultMap="myDeptStep">
+	select id, name from tbl_department where id = #{id}  
+	</select>
+</mapper>

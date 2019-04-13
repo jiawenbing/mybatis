@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nuc.sw.dao.EmployeeMapper">
+
+<!--
+接口与sql映射文件进行绑定
+namespace:名称空间  ***接口的全类名
+id:sql语句唯一标识   ***接口的方法名
+resultType:返回值类型
+databaseId:指定使用的是什么数据库   写主配置文件databaseIdProvider标签下的value值
+			优先加载带有准确数据库标识的语句
+#{id}:从传递过来的参数中取出id的值
+ -->
+	<select id="getEmployeeById" resultType="com.nuc.sw.bean.Employee" databaseId="mysql">
+		select * from tbl_employee where id = #{id}
+	</select>
+	<!-- <select id="getEmployeeById" resultType="emp" databaseId="oracle">
+		select * from tbl_employee where id = #{id}
+	</select> -->
+	
+	<!-- 添加员工 
+	parameterType: 参数类型的全类名(可以省略)
+	
+	mysql支持自增主键
+	自增主键值的获取 mybatis也是利用 statement.getGenerateKeys()获取
+	useGeneratedKeys="true" 使用自增主键获取主键值策略
+	keyProperty  指定对应的主键属性，也就是mybatis获取到主键属性后交给javaBean的哪个属性。
+	-->
+	<insert id="addEmployee" parameterType="com.nuc.sw.bean.Employee" useGeneratedKeys="true" keyProperty="id">
+	insert into tbl_employee(last_name,gender,email) values(#{lastName},#{gender},#{email})
+	</insert>
+	
+	<!-- 删除员工
+	 -->
+	 <delete id="deleteEmployeeById">
+	 delete from tbl_employee where id = #{id}
+	 </delete>
+	
+	<!--  修改员工 
+	 -->
+	 <update id="updateEmployee">
+	 update tbl_employee set last_name = #{lastName},email = #{email},gender = #{gender} where id = #{id} 
+	 </update>
+	
+	<select id="getEmployeeByIdAndLastName" resultType="com.nuc.sw.bean.Employee">
+	select * from tbl_employee where id = #{id} and last_name = #{lastName}
+	</select>
+	
+	<select id="getEmployeeByMap" resultType="com.nuc.sw.bean.Employee">
+	select * from ${tableName} where id = ${id} and last_name = #{lastName}
+	</select>
+	
+	<!-- 返回值为list,resultType直接写list中存放的类型 -->
+	<select id="getEmployeesByLastNameLike" resultType="com.nuc.sw.bean.Employee">
+	select * from tbl_employee where last_name like #{lastName}
+	</select>
+	
+	<!-- 返回单条记录的map key是字段名  value是字段值
+	public Map<String, Object> getEmployeeByIdReturnMap(Integer id); -->
+	<select id="getEmployeeByIdReturnMap" resultType="map">
+		select * from tbl_employee where id = #{id}
+	</select>
+	
+	<!-- 返回多条记录javabean对象并封装成map key是记录的主键  value是记录封装成的对象
+	public Map<Integer, Object> getEmployeeByLastNameReturnMap(String lastName); -->
+	<select id="getEmployeeByLastNameReturnMap" resultType="com.nuc.sw.bean.Employee">
+		select * from tbl_employee where last_name like #{lastName}
+	</select>
+	
+	
+</mapper>

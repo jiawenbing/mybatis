@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nuc.sw.dao.EmployeeMapperDynamicSQL">
+	<!-- public List<Employee> getEmpsConditionIf(Employee employee); -->
+	<select id="getEmpsConditionIf" resultType="com.nuc.sw.bean.Employee">
+		select * from tbl_employee
+		<!-- sql拼装问题解决方案 
+				1.where后面加上 1=1 恒成立的条件，where后的每个条件前加上and 
+				2.使用where标签把条件进行包括（去掉sql语句中的where,并把and或者or写在子条件语句的前面）,mybatis会去掉where标签中子条件前面多余的and或者or 
+			使用where标签and放到子条件的前面 -->
+		<!-- test写ognl表达式 从参数中取值进行判断 遇见特殊符号写转义字符 -->
+		<where>
+			<if test="id!=null">
+				id = #{id}
+			</if>
+			<if test="lastName!=null &amp;&amp; lastName!=&quot;&quot;">
+				and last_name like #{lastName}
+			</if>
+			<!-- ognl会进行字符串和数字的转换判断 -->
+			<if test="gender == 0 or gender == 1">
+				and gender = #{gender}
+			</if>
+			<!-- trim函数：删除字符串两侧的空白字符或其他字符 -->
+			<if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+				and email = #{email}
+			</if>
+		</where>
+	</select>
+
+	<!-- public List<Employee> getEmpsConditionTrim(Employee employee); -->
+	<select id="getEmpsConditionTrim" resultType="com.nuc.sw.bean.Employee">
+		select * from tbl_employee
+		<!-- trim标签 解决子条件后面多余的and或者or  trim标签体中是整个字符串拼接后的结果
+		 prefix： 前缀，给拼串后整个字符串加一个前缀
+		 prefixOverrides： 前缀覆盖，去掉整个字符串前面多余的字符
+		 suffix： 后缀，给拼串后整个字符串加一个后缀
+		 suffixOverrides：后缀覆盖，去掉整个字符串后面多余的字符
+		  -->
+		<trim prefix="where" suffixOverrides="and">
+			<if test="id!=null">
+				id = #{id} and
+			</if>
+			<if test="lastName!=null &amp;&amp; lastName!=&quot;&quot;">
+				last_name like #{lastName} and
+			</if>
+			<if test="gender == 0 or gender == 1">
+				gender = #{gender} and
+			</if>
+			<if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+				email = #{email}
+			</if>
+		</trim>
+	</select>
+	
+	<!-- public List<Employee> getEmpsConditionChoose(Employee employee); -->
+	<select id="getEmpsConditionChoose" resultType="com.nuc.sw.bean.Employee">
+		select * from tbl_employee
+		<where>
+			<!-- 只会进入下列选择中的一个条件 -->
+			<choose>
+				<when test="id!=null">
+					id = #{id}
+				</when>
+				<when test="lastName!=null">
+					last_name like #{lastName}
+				</when>
+				<when test="email!=null">
+					email = #{email}
+				</when>
+				<otherwise>
+					gender = 0
+				</otherwise>
+			</choose>
+		</where>
+	</select>
+	
+	<!-- public void updateEmployee(Employee employee); -->
+	<update id="updateEmployee" parameterType="com.nuc.sw.bean.Employee">
+		<!-- set标签 -->
+		<!-- update tbl_employee 
+		<set>
+		<if test="lastName!=null">
+		last_name = #{lastName},
+		</if>
+		<if test="gender!=null">
+		gender = #{gender},
+		</if>
+		<if test="email!=null">
+		email = '${email}'
+		</if>
+		</set>
+		<where>
+		id = #{id}
+		</where> -->
+		
+		<!-- trim标签 -->
+		update tbl_employee
+		<trim prefix="set" suffixOverrides=",">
+		<if test="lastName!=null">
+		last_name = #{lastName},
+		</if>
+		<if test="gender!=null">
+		gender = #{gender},
+		</if>
+		<if test="email!=null">
+		email = '${email}'
+		</if>
+		</trim>
+		<where>
+		id = #{id}
+		</where>
+	</update>
+	
+	<!-- public List<Employee> getEmpsConditionForEach(List<Integer> ids); -->
+	<select id="getEmpsConditionForEach" resultType="com.nuc.sw.bean.Employee" parameterType="java.util.ArrayList">
+		select * from tbl_employee
+		<!-- collection：指定要遍历的集合
+				1.如果传入的参数是单个list,则collection值为list
+					list类型的参数会特殊处理封装在map中，map的key就叫list
+				2.如果传入的参数是单个array，则collection值为array
+				3.如果传入的参数是自定义map,则collection值为map中的key，key对应的value为list或者array
+			 item：将当前从集合遍历出的元素赋值给指定变量
+			 #{变量名}：取出变量的值，也就是当前正在遍历的元素
+			 separator:每个元素之间的分隔符
+			 open：遍历出的所有结果拼接一个开始的字符
+			 close:遍历出的所有结果拼接一个结束的字符
+			 index：索引：
+			 	遍历list index就是索引  item就是值
+			 	遍历map index就是map的key item就是map的value
+		 -->
+		<foreach collection="ids" item="item_id" open="where id in (" close=")" separator="," >
+		#{item_id}
+		</foreach>
+	</select>
+	
+	<!-- 批量保存方式1 -->
+	<!-- public void insertEmpsConditionForEach(@Param("emps")List<Employee> emps);-->
+	<!-- <insert id="insertEmpsConditionForEach" parameterType="java.util.ArrayList">
+		insert into tbl_employee(last_name,gender,email,dept_id) values
+		<foreach collection="emps" separator="," item="emp">
+		(#{emp.lastName},#{emp.gender},#{emp.email},#{emp.dept.id})
+		</foreach>
+	</insert> -->
+	<!-- 批量保存方式2 
+	需要开启allowMultiQueries=true  在jdbc.url后面加上?allowMultiQueries=true
+	开启之后就可以支持多条sql语句同时执行。
+	-->
+	<insert id="insertEmpsConditionForEach" parameterType="java.util.ArrayList">
+	<foreach collection="emps" item="emp" separator=";">
+	insert into tbl_employee(<include refid="insert_employee">
+		<property name="myPro" value="123"/>
+	</include>) values (#{emp.lastName},#{emp.gender},#{emp.email},#{emp.dept.id})
+	</foreach>
+	</insert>
+	
+	<!-- 内置参数
+	_parameter  代表传递的整个参数
+		如果是单个参数，就代表这个参数本身
+		如果是多个参数，会封装成一个map，就代表这个map
+	_databaseId  如果配置了databaseIdProvider标签，代表当前数据库的别名
+	 -->
+	<!-- public List<Employee> getEmployeeInnerParameter(Employee employee); -->
+	<select id="getEmployeeInnerParameter" resultType="com.nuc.sw.bean.Employee">
+		<!-- 可以将ognl表达式的值绑定到一个变量中，方便后来引用这个ognl表达式的值 例如模糊查询-->
+		<bind name="_lastName" value="'%'+lastName+'%'"/>
+		<if test="_databaseId=='mysql'">
+			select * from tbl_employee where last_name like #{_lastName}
+		</if>
+	</select>
+	
+	<!-- sql片段的抽取 
+		使用<include refid="insert_employee">进行引用抽取的片段
+	-->
+	<sql id="insert_employee">
+		<if test="_databaseId=='mysql'">
+		last_name,gender,email,dept_id
+		</if>
+	</sql>
+</mapper>
+ 
